@@ -135,12 +135,11 @@ internal static class TmodReader
 
         if (isRootDll)
         {
-            var decompiledDirectory = Path.Combine(outputDirectory, "DecompiledSource");
-            var decompileSuccess = DllDecompiler.TryDecompileToProject(targetPath, decompiledDirectory);
+            var decompileSuccess = DllDecompiler.TryDecompileToProject(targetPath, outputDirectory);
             return (decompileSuccess, false, true);
         }
 
-        // Dependency DLLs under lib/ or similar folders are extracted as-is, not decompiled.
+        // Dependency Dlls under lib/ or similar folders are extracted as-is, not decompiled.
         return (false, false, false);
     }
 
