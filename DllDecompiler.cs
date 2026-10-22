@@ -28,13 +28,49 @@ internal static class DllDecompiler
 
             var peFile = new PEFile(dllPath);
             var decompiler = new WholeProjectDecompiler(settings, resolver, null, null, null);
-            decompiler.DecompileProject(peFile, outputDirectory);
+
+            var tempDirectory = Path.Combine(Path.GetTempPath(), "TmodExtractor_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDirectory);
+
+            try
+            {
+                decompiler.DecompileProject(peFile, tempDirectory);
+
+                var assemblyName = peFile.Name;
+                var generatedSubfolder = Path.Combine(tempDirectory, assemblyName);
+
+                var sourceDirectory = Directory.Exists(generatedSubfolder)
+                    ? generatedSubfolder
+                    : tempDirectory;
+
+                MoveDirectoryContents(sourceDirectory, outputDirectory);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDirectory))
+                    Directory.Delete(tempDirectory, recursive: true);
+            }
 
             return true;
         }
         catch
         {
             return false;
+        }
+    }
+
+    private static void MoveDirectoryContents(string sourceDirectory, string targetDirectory)
+    {
+        foreach (var sourceFile in Directory.GetFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            var relativePath = Path.GetRelativePath(sourceDirectory, sourceFile);
+            var targetFile = Path.Combine(targetDirectory, relativePath);
+            var targetFileDirectory = Path.GetDirectoryName(targetFile);
+
+            if (!string.IsNullOrEmpty(targetFileDirectory))
+                Directory.CreateDirectory(targetFileDirectory);
+
+            File.Copy(sourceFile, targetFile, overwrite: true);
         }
     }
 }
